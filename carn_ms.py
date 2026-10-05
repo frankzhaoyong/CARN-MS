@@ -1538,7 +1538,7 @@ def parse_args():
     parser.add_argument("-i", "--input", type=str, default="", help="Input OBJ mesh path.")
     parser.add_argument("-o", "--output", type=str, default="", help="Output simplified OBJ path.")
     parser.add_argument("-r", "--ratio", type=float, default=0.5, help="Simplification target ratio (0 < r <= 1.0).")
-    parser.add_argument("--checkpoint", type=str, default="./checkpoints/c5_d_net.pth", help="Model checkpoint path.")
+    parser.add_argument("--checkpoint", type=str, default="./checkpoints/carn_ms_net.pth", help="Model checkpoint path; simplify falls back to the bundled carn_ms_pretrained.pth.")
     parser.add_argument("--no_gatekeeper", action="store_true", help="Disable topology/inversion gatekeeper.")
     parser.add_argument("--device", type=str, default="", help="Device override (cpu, mps, cuda). Default: train on mps, simplify/evaluate on cpu.")
     parser.add_argument("--train_models", type=str, nargs="+", default=[], help="Model paths for training.")
@@ -1549,7 +1549,7 @@ def parse_args():
     parser.add_argument("--metric_seed_count", "--seed_count", dest="metric_seed_count", type=int, default=DEFAULT_METRIC_SEED_COUNT,
                         help="Number of evaluation seeds (default: 3).")
     parser.add_argument("--cpu_fraction", type=float, default=DEFAULT_CPU_FRACTION,
-                        help="CPU usage ratio cap (default: 0.70 for 70% resource limit).")
+                        help="CPU usage ratio cap (default: 0.70 for 70%% resource limit).")
     return parser.parse_args()
 
 
@@ -1575,12 +1575,12 @@ def main():
         # Device for inference (simplification priority & geometry updates) is fixed to CPU
         infer_device = args.device if args.device else get_infer_device()
         ckpt_path = args.checkpoint
-        default_ckpt = "./checkpoints/c5_d_net.pth"
+        default_ckpt = "./checkpoints/carn_ms_net.pth"
         explicit_checkpoint = any(a == "--checkpoint" or a.startswith("--checkpoint=") for a in sys.argv[1:])
         if explicit_checkpoint and not os.path.exists(ckpt_path):
             raise FileNotFoundError(f"Specified checkpoint file does not exist: {ckpt_path}")
         if ckpt_path == default_ckpt:
-            for fallback in ["./checkpoints/c5_d_generalized_400_v3.pth", "./checkpoints/c5_d_generalized.pth"]:
+            for fallback in [str(Path(__file__).resolve().with_name("carn_ms_pretrained.pth"))]:
                 if not os.path.exists(ckpt_path) and os.path.exists(fallback):
                     ckpt_path = fallback
                     break
